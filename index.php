@@ -45,6 +45,42 @@ function validateCode($pathcode) {
 }
 
 /*
+	Escanea recursivamente todos los ficheros de $$pathdirectories y los devuelve.
+*/
+function escaneoRecursivoFicheros($pathdirectories)
+{
+	//Declaramos la variable como array que va a guardar el escaneo
+	$result = array();
+	//Por cada directorio/fichero en el codigo a validar
+	foreach(scandir($pathdirectories) as $line)
+	{
+		//Si el $line es el directorio actual o el anterior pasamos al siguiente elemento
+		if($line === '.' || $line === '..')
+		{
+			continue;
+		}
+		$files = $pathdirectories . '/' . $line; 
+		//Si el $files es un directorio, entramos en el y escaneamos de nuevo
+		if(is_readable($files) && is_dir($files))
+		{
+			//Por cada uno de los elementos de lo devuelto en el escaneoRecursivo se mete en el array
+			foreach(escaneoRecursivoFicheros($files) as $childFiles)
+			{
+				//Metemos al final del array el $childFiles
+				$result[] = $childFiles;
+			}
+		}
+		//Si el $files NO es un directorio
+		else
+		{
+			//Metemos al final del array el PATH completo del fichero
+			$result[] = $pathdirectories . '/' . $line;
+		}
+	}
+	return $result;
+}
+
+/*
  * Existen los directorios especificados en el fichero Directories.conf
  * y no hay ningún fichero mas en el directorio principal que el
  * index.php
@@ -54,53 +90,224 @@ function validateDirectories($pathdirectories, $pathcode) {
 	//Array que guardará la salida
 	$array = array();
 
+	//Si se valida (ver condiciones en las funciones) la carpeta contenedora y el fichero de configuración
 	if (validateConf($pathdirectories) == 1 && validateCode($pathcode) == 1) {
 
+		//Variable que vuelca el contenido del fichero de configuración
 		$path = file($pathdirectories);
+		//Variable que vuelca todo el contenido que cuelga directamente de la carpeta contenedora
 		$dir = glob($pathcode . '/*');
+		//Variable que guarda el número de ficheros + directorios (se eliminan '.' '..')
 		$dir_num = count($dir) - 1;
+		//Variable para la comprobación de index.php
 		$index_bool = 1;
 
-		foreach ($path as $num_line => $line) {
+		//Por cada línea del fichero de configuración
+		foreach ($path as $num_line => $line) {//1ro
+
+			//Imprimimos el PATH 
 			echo trim($line);
-			foreach ($dir as $num_line2 => $line2) {	
+			//Por cada fichero o directorio de la carpeta contedora
+			foreach ($dir as $num_line2 => $line2) { //2do
+
+				//Si coinciden el nombre en los ficheros de configuración y el de la carpeta contenedora
 				if (strcmp(trim($line),trim($line2)) === 0) {
+
 					echo ' ---------- OK' . '<br/>';
 					array_push($array, 'OK');
 					array_splice($dir, $num_line2, 1);
 					$dir_num--;
-					break;
+					break; //Pasamos a la siguiente iteracción foreach 1ro
 				}
-				elseif($dir_num > $num_line2)
+				//Si no hemos llegado al final de la lista de ficheros + directorios
+				elseif(!$dir_num > $num_line2)
 				{
-					continue;
-				}
-				else {
 					echo ' ---------- ERROR: El directorio no existe' . '<br/>';
 					array_push($array, 'ERROR');
 				}
 			}
 		}
-		foreach ($dir as $num_line => $line) {
+
+		//Por cada fichero + directorios de la carpeta contenedora
+		foreach ($dir as $num_line => $line) {//3ro
+			//Si coincide con index.php
 			if(strcmp($line, $pathcode . '/index.php') === 0)
 			{
 				echo trim($line) . ' ---------- OK' . '<br/>';
 				array_push($array, 'OK');
 				$index_bool = 0;
 			}
+			//Si no coincide con index.php
 			else {
 				echo trim($line) . ' ---------- ERROR: El directorio no existe en Directories.conf' . '<br/>';
 				array_push($array, 'ERROR');
 			}
 		}
-		if($index_bool == 1)
-		{
+
+		//Si no se ha validado el index.php
+		if($index_bool == 1) {			
 			echo $pathcode . '/index.php' . ' ---------- ERROR: El fichero index.php no existe' . '<br/>';
 			array_push($array, 'ERROR');
 		}
 	}
+	/*
+	//En caso de que no se validen los ficheros de configuración o la carpeta contenedora
+	else
+	{
+		echo 'ERROR, el fichero de configuración '. $pathdirectories . ' o la carpeta contenedora ' . $pathcode . 'no existen, están vacíos o no se tienen permisos de lectura.' . '<br/>';
+	}*/
 	return $array;
 }
+
+/*
+ * Existen los ficheros especificados en el fichero Files.conf y
+ * tienen el nombre especificado
+ */
+function validateFiles($pathfiles, $pathcode) {
+	//Array que guardará la salida
+	$array = array();
+	//Caracter separador de los archivos
+	$simbolo = "_";
+	//Simbolo que se utiliza para substituir a todos los caracteres
+	$caracter_alfabetico = '%';
+	//Si se valida (ver condiciones en las funciones) la carpeta contenedora y el fichero de configuración
+	if (validateConf($pathfiles) == 1 && validateCode($pathcode) == 1) {
+		$files = escaneoRecursivoFicheros($pathcode);
+		$path = file($pathfiles);
+		foreach ($path as $num_line => $line) { //1ro
+			//Dividimos por el caracter separdor
+			$dividirTodo = explode(('/'), trim($line));
+			//Creamos el array para guardar el PATH incompleto
+			$path_incompleto = array();
+			//Contamos el número de elementos divididos
+			$num_elem = count($dividirTodo) - 1;
+			//Recorremos el bucle for num_elem de veces
+			for($i = 0; $i < $num_elem; $i++)
+			{
+				//Guardamos todo menos el nombre del archivo
+				$path_incompleto[] = $dividirTodo[$i];
+			}
+			//Formamos el PATH completo
+			$path_completo = implode('/', $path_incompleto);
+			//Array para guardar cada una de las partes al dividir por el punto
+			$dividirPunto = array();
+			//Dividimos a partir del punto
+			$dividirPunto = explode('.', $dividirTodo[$num_elem], 2);
+			//Cogemos el tipo de fichero
+			$tipoFichero = $dividirPunto[1];
+			//Si lleva '%' - es decir, que valide los que NO tengan un nombre concreto
+			if(strpos($line, $caracter_alfabetico) !== false)
+			{
+				echo $line . '<br/>';
+				//Dividimos ahora cada una de las partes del %
+				$dividirSimbolo = explode(trim($simbolo), $dividirPunto[0]);
+				//Contamos el tamaño de $dividirSimbolo
+				$size_dividirSimbolo = count($dividirSimbolo)-1;
+				//Seleccionamos la cadena a validar
+				$cadenaValidacion = $dividirSimbolo[$size_dividirSimbolo];
+				//Contamos el número de '%'
+				$numeroPorcentajes = substr_count($dividirTodo[$num_elem], $caracter_alfabetico);
+				if(is_dir($path_completo) && is_readable($path_completo))
+				{
+					$allPaths = scandir($path_completo);
+					//Por cada uno de los elementos del directorio $path_completo como $valor
+					foreach($allPaths as $num_valor => $valor) {//2do
+			        	//Quitamos los que son directorios y los . y ..
+			        	if($valor === '.' || $valor === '..' || is_dir($valor))
+						{
+							continue; //Si es directorio . o .. pasamos a la siguiente iteración del bucle 
+						}
+						//Si hay más de 1 '%'
+						if($size_dividirSimbolo > 0)
+						{
+							//Si coincide con la expresión regular con +1 '%' con $valor
+							if(preg_match("/\\" . '/\b' . "([a-z]*" . $simbolo . "){" . $numeroPorcentajes . "}" . trim($cadenaValidacion) . "\." . trim($tipoFichero) . "\b/i", trim('/' . $valor), $array_pregmatch))
+						    {
+						    	$resultado = str_replace($array_pregmatch[0],'', ('/' . $valor));
+						    	if(!empty($resultado)){
+						    		echo trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR' . '<br/>';
+									array_push($array, 'ERROR');
+						    	}
+						    	else{
+							    	echo trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '<br/>';
+									array_push($array, 'OK');
+						    	}
+						    }
+						    else
+						    {	
+						    	echo trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR' . '<br/>';
+								array_push($array, 'ERROR');
+						    }
+						}
+						//Si hay menos de  1 '%'
+						else
+						{
+							//Si coincide con la expresión regular con menos de 1 '%' con $valor
+							if(preg_match("/\\" . '/' . "([a-z]*)\." . trim($tipoFichero) . "/i", trim('/' . $valor)))
+						    {
+						    	echo trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '<br/>';
+						    	array_push($array, 'OK');
+						    }
+						    else
+						    {
+						    	echo "error";
+						    	echo $line . ' ---------- ERROR: no coinciden el nombre con ningún archivo' . '<br/>';
+								array_push($array, 'ERROR');
+						    }
+						}
+					}
+				}
+				else {
+					echo $line .' ---------- ERROR: No existe el directorio base (o bien existe pero no es un directorio) o no se tienen permisos de lectura' . '<br/>';
+					array_push($array, 'ERROR');
+				}
+			}
+			//Si no lleva '%' - es decir, que valide los que tengan un nombre concreto
+			else
+			{
+				if(is_dir($path_completo) &&  is_readable($path_completo))
+				{
+					$allPaths = scandir($path_completo);
+					$total_valor = count($allPaths) - 1;
+					//Por cada uno de los elementos del directorio $path_completo como $valor
+					foreach($allPaths as $num_valor => $valor)
+					{
+					    //Quitamos los que son directorios y los . y ..
+					    if($valor === '.' || $valor === '..' || is_dir($valor))
+						{
+							continue;
+						}
+						//Validamos que el nombre concreto conincide
+						if(strcasecmp(trim($path_completo . '/' . $valor),trim($path_completo . '/' . $dividirTodo[$num_elem])) === 0)
+						{
+						    echo trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '<br/>';
+						    array_push($array, 'OK');
+						    break;
+						}
+						elseif($total_valor <= $num_valor) {
+							echo $line . ' ---------- ERROR: no coinciden el nombre con ningún archivo' . '<br/>';
+						    array_push($array, 'ERROR');
+						}
+					}
+				}
+				else
+				{
+					echo trim($path_completo) .' ---------- ERROR: No existe el directorio base (o bien existe pero no es un directorio) o no se tienen permisos de lectura' . '<br/>';
+					array_push($array, 'ERROR');
+				}
+			}
+		}
+	}
+	/*
+		//En caso de que no se validen los ficheros de configuración o la carpeta contenedora
+		else
+		{
+			echo 'ERROR, el fichero de configuración '. $pathfiles . ' o la carpeta contenedora ' . $pathcode . 'no existen, están vacíos o no se tienen permisos de lectura.' . '<br/>';
+		}
+	*/
+}
+
+
 //Detecta si existe un comentario al incio del codigo que contenga las palabras autor fecha funcion
 function validateComentInit($fichero){
 	$archivo = file($fichero);//guarda el fichero del que se quiere comprobar si tiene comentarios al pricipio
