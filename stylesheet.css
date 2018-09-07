@@ -1,0 +1,59 @@
+* {
+	font-family: "Arial";
+}
+
+h3 {
+	color: #008CBA;
+	padding-left: 50px;
+}
+
+div.header {
+	height: 75px;
+	margin-left: -8px;
+	margin-right: -8px;
+	margin-top: -21px;
+	margin-bottom: 10px;
+	padding-left: 20px;
+	padding-top: 5px;
+	background-color: #008CBA;
+}
+
+div.content {
+	padding-left: 15px;
+}
+
+p2.errorMessage {
+	color: rgb(204, 0, 0);
+	font-weight: bold;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:link {
+	color: white;
+}
+
+a:visited {
+	color: white;
+}
+
+button {
+  padding: 16px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+  background-color: white; 
+  color: black; 
+  border: 2px solid #008CBA;
+}
+
+button:hover {
+	background-color: #008CBA;
+  color: white;
+}

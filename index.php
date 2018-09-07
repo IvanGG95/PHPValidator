@@ -19,11 +19,27 @@ function validateConf($confFile) {
 	if (is_readable($confFile)) {
 		$files = file($confFile);
 
-		if (empty($files)) { return -1; }
+		if (empty($files)) { return 0; }
 
 		return 1;
 
 	} else { return -1; };
+
+}
+
+function validateConfMessage($pathdirectories, $pathfiles) {
+
+	if (validateConf($pathdirectories) == 0) {
+		return '</br><p2 class="errorMessage">ERROR: El fichero Directories.conf está vacío.</p2></br></br>';
+	} else if (validateConf($pathdirectories) == -1) {
+		return '</br><p2 class="errorMessage">ERROR: El fichero Directories.conf no existe o no tiene permisos de lectura.</p2></br></br>';
+	}
+
+	if (validateConf($pathfiles) == 0) {
+		return '</br><p2 class="errorMessage">ERROR: El fichero Files.conf está vacío.</p2></br></br>';
+	} else if (validateConf($pathfiles) == -1) {
+		return '</br><p2 class="errorMessage">ERROR: El fichero Files.conf no existe o no tiene permisos de lectura.</p2></br></br>';
+	}
 
 }
 
@@ -45,7 +61,7 @@ function validateCode($pathcode) {
 }
 
 /*
-	Escanea recursivamente todos los ficheros de $$pathdirectories y los devuelve.
+	Escanea recursivamente todos los ficheros de $pathdirectories y los devuelve.
 */
 function escaneoRecursivoFicheros($pathdirectories)
 {
@@ -104,25 +120,22 @@ function validateDirectories($pathdirectories, $pathcode) {
 
 		//Por cada línea del fichero de configuración
 		foreach ($path as $num_line => $line) {//1ro
-
-			//Imprimimos el PATH 
-			echo trim($line);
 			//Por cada fichero o directorio de la carpeta contedora
 			foreach ($dir as $num_line2 => $line2) { //2do
 
 				//Si coinciden el nombre en los ficheros de configuración y el de la carpeta contenedora
 				if (strcmp(trim($line),trim($line2)) === 0) {
 
-					echo ' ---------- OK' . '<br/>';
+					echo '<p2>' . trim($line) . ' ---------- OK</p2><br/>';
 					array_push($array, 'OK');
 					array_splice($dir, $num_line2, 1);
 					$dir_num--;
 					break; //Pasamos a la siguiente iteracción foreach 1ro
 				}
 				//Si no hemos llegado al final de la lista de ficheros + directorios
-				elseif(!$dir_num > $num_line2)
+				else if($dir_num <= $num_line2)
 				{
-					echo ' ---------- ERROR: El directorio no existe' . '<br/>';
+					echo '<p2 class="errorMessage">' . trim($line) . ' ---------- ERROR: El directorio no existe' . '</p2><br/>';
 					array_push($array, 'ERROR');
 				}
 			}
@@ -133,30 +146,27 @@ function validateDirectories($pathdirectories, $pathcode) {
 			//Si coincide con index.php
 			if(strcmp($line, $pathcode . '/index.php') === 0)
 			{
-				echo trim($line) . ' ---------- OK' . '<br/>';
+				echo '<p2>' . trim($line) . ' ---------- OK' . '<br/>';
 				array_push($array, 'OK');
 				$index_bool = 0;
 			}
 			//Si no coincide con index.php
 			else {
-				echo trim($line) . ' ---------- ERROR: El directorio no existe en Directories.conf' . '<br/>';
+				echo '<p2 class="errorMessage">' . trim($line) . ' ---------- ERROR: El directorio no existe en Directories.conf' . '</p2><br/>';
 				array_push($array, 'ERROR');
 			}
 		}
 
 		//Si no se ha validado el index.php
 		if($index_bool == 1) {			
-			echo $pathcode . '/index.php' . ' ---------- ERROR: El fichero index.php no existe' . '<br/>';
+			echo '<p2 class="errorMessage">' . $pathcode . '/index.php' . ' ---------- ERROR: El fichero index.php no existe' . '</p2><br/>';
 			array_push($array, 'ERROR');
 		}
 	}
-	/*
-	//En caso de que no se validen los ficheros de configuración o la carpeta contenedora
-	else
-	{
-		echo 'ERROR, el fichero de configuración '. $pathdirectories . ' o la carpeta contenedora ' . $pathcode . 'no existen, están vacíos o no se tienen permisos de lectura.' . '<br/>';
-	}*/
-	return $array;
+	
+	//
+	//TODO: llamar a la función SUMMARY
+	//
 }
 
 /*
@@ -225,18 +235,18 @@ function validateFiles($pathfiles, $pathcode) {
 						    {
 						    	$resultado = str_replace($array_pregmatch[0],'', ('/' . $valor));
 						    	if(!empty($resultado)){
-						    		echo trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR' . '<br/>';
+						    		echo '<p2 class="errorMessage">' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
 									array_push($array, 'ERROR');
 						    	}
 						    	else{
-							    	echo trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '<br/>';
+							    	echo '<p2>' . trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '</p2></br>';
 									array_push($array, 'OK');
 						    	}
 						    }
 						    else
 						    {	
-						    	echo trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR' . '<br/>';
-								array_push($array, 'ERROR');
+						    	echo '<p2 class="errorMessage">' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
+									array_push($array, 'ERROR');
 						    }
 						}
 						//Si hay menos de  1 '%'
@@ -245,20 +255,19 @@ function validateFiles($pathfiles, $pathcode) {
 							//Si coincide con la expresión regular con menos de 1 '%' con $valor
 							if(preg_match("/\\" . '/' . "([a-z]*)\." . trim($tipoFichero) . "/i", trim('/' . $valor)))
 						    {
-						    	echo trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '<br/>';
+						    	echo '<p2>' . trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '</p2></br>';
 						    	array_push($array, 'OK');
 						    }
 						    else
 						    {
-						    	echo "error";
-						    	echo $line . ' ---------- ERROR: no coinciden el nombre con ningún archivo' . '<br/>';
-								array_push($array, 'ERROR');
+						    	echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2></br>';
+									array_push($array, 'ERROR');
 						    }
 						}
 					}
 				}
 				else {
-					echo $line .' ---------- ERROR: No existe el directorio base (o bien existe pero no es un directorio) o no se tienen permisos de lectura' . '<br/>';
+					echo '<p2 class="errorMessage">' . $line .' ---------- ERROR: No existe el directorio base' . '</p2></br>';
 					array_push($array, 'ERROR');
 				}
 			}
@@ -280,32 +289,31 @@ function validateFiles($pathfiles, $pathcode) {
 						//Validamos que el nombre concreto conincide
 						if(strcasecmp(trim($path_completo . '/' . $valor),trim($path_completo . '/' . $dividirTodo[$num_elem])) === 0)
 						{
-						    echo trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '<br/>';
-						    array_push($array, 'OK');
-						    break;
+						  echo '<p2>' . trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '</p2><br/>';
+						  array_push($array, 'OK');
+						  break;
 						}
 						elseif($total_valor <= $num_valor) {
-							echo $line . ' ---------- ERROR: no coinciden el nombre con ningún archivo' . '<br/>';
-						    array_push($array, 'ERROR');
+							echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
+						  array_push($array, 'ERROR');
 						}
 					}
 				}
 				else
 				{
-					echo trim($path_completo) .' ---------- ERROR: No existe el directorio base (o bien existe pero no es un directorio) o no se tienen permisos de lectura' . '<br/>';
+					echo '<p2 class="errorMessage">' . trim($path_completo) .' ---------- ERROR: No existe el directorio base' . '</p2><br/>';
 					array_push($array, 'ERROR');
 				}
 			}
 		}
 	}
-	/*
-		//En caso de que no se validen los ficheros de configuración o la carpeta contenedora
-		else
-		{
-			echo 'ERROR, el fichero de configuración '. $pathfiles . ' o la carpeta contenedora ' . $pathcode . 'no existen, están vacíos o no se tienen permisos de lectura.' . '<br/>';
-		}
-	*/
+
+	//
+	//TODO: llamar a la función SUMMARY
+	//
 }
+
+//-------------------------------------------------------------------------------------------------------------------
 
 
 //Detecta si existe un comentario al incio del codigo que contenga las palabras autor fecha funcion
@@ -471,9 +479,70 @@ function validateComentStruct($string){
 <html>
 <head>
 	<title>PHPValidator</title>
+	<link rel="stylesheet" type="text/css" href="stylesheet.css">
 </head>
 <body>
-	<h1><a href="index.php" style="text-decoration:none;">PHPValidator</a></h1>
-	<?php validateDirectories($PATH_directories, $PATH_code) ?>
+	<div class="header">
+		<h1><a href="index.php">PHPValidator</a></h1>
+	</div>
+	<button id="b1" onClick='location.href="?button1=1"'>RESUMEN</button>
+  <button id="b2" onClick='location.href="?button2=1"'>DETALLE</button>
+
+  <div class="content">
+	  <?php
+
+	  if (validateConf($PATH_directories) == 1 && validateConf($PATH_files) == 1) {
+	  	echo '<p>Todos los archivos de configuración se han cargado de forma correcta.</p>';
+	  } else { echo validateConfMessage($PATH_directories, $PATH_files); }
+
+	  if (isset($_GET['button1'])) {
+	  	echo '<h3>--- RESUMEN ---</h3>';
+
+	  	echo '<h4>1. Existen los directorios especificados en el fichero Directories.conf y no hay ningún fichero mas en el directorio principal que el index.php</h4>';
+
+	  	echo '<h4>2. Los ficheros de vista, controlador y modelo tienen el nombre indicado en la especificación en el fichero Files.conf</h4>';
+
+	  	echo '<h4>3. Los ficheros del directorio CodigoAExaminar tiene todos al principio del fichero comentada su función, autor y fecha<br>(para todos los ficheros que no son propietarios de tipo .pdf, .jpg, etc)</h4>';
+
+	  	echo '<h4>4. Las funciones y métodos en el código del directorio CodigoAExaminar tienen comentarios con una descripción antes de su comienzo</h4>';
+
+	  	echo '<h4>5. En el código están todas las variables definidas antes de su uso y tienen un comentario en la línea anterior o en la misma línea</h4>';
+
+	  	echo '<h4>6. En el código están comentadas todas las estructuras de control en la línea anterior a su uso o en la misma línea</h4>';
+
+	  	echo '<h4>7. Todos los ficheros dentro del directorio Model son definiciones de clases</h4>';
+
+	  	echo '<h4>8. Todos los ficheros dentro del directorio Controller son scripts php</h4>';
+
+	  	echo '<h4>9. Todos los ficheros dentro del directorio View son definiciones de clases</h4>';
+	  }
+
+	  if (isset($_GET['button2'])) {
+	  	echo '<h3>--- DETALLE ---</h3>';
+
+	  	echo '<h4>1. Existen los directorios especificados en el fichero Directories.conf y no hay ningún fichero mas en el directorio principal que el index.php</h4>';
+
+	  	validateDirectories($PATH_directories, $PATH_code);
+
+	  	echo '<h4>2. Los ficheros de vista, controlador y modelo tienen el nombre indicado en la especificación en el fichero Files.conf</h4>';
+
+	  	validateFiles($PATH_files, $PATH_code);
+
+	  	echo '<h4>3. Los ficheros del directorio CodigoAExaminar tiene todos al principio del fichero comentada su función, autor y fecha<br>(para todos los ficheros que no son propietarios de tipo .pdf, .jpg, etc)</h4>';
+
+	  	echo '<h4>4. Las funciones y métodos en el código del directorio CodigoAExaminar tienen comentarios con una descripción antes de su comienzo</h4>';
+
+	  	echo '<h4>5. En el código están todas las variables definidas antes de su uso y tienen un comentario en la línea anterior o en la misma línea</h4>';
+
+	  	echo '<h4>6. En el código están comentadas todas las estructuras de control en la línea anterior a su uso o en la misma línea</h4>';
+
+	  	echo '<h4>7. Todos los ficheros dentro del directorio Model son definiciones de clases</h4>';
+
+	  	echo '<h4>8. Todos los ficheros dentro del directorio Controller son scripts php</h4>';
+
+	  	echo '<h4>9. Todos los ficheros dentro del directorio View son definiciones de clases</h4>';
+	  }
+		?>
+	</div>
 </body>
 </html>
