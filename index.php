@@ -102,7 +102,7 @@ function validateDirectories($pathdirectories, $pathcode) {
 	return $array;
 }
 //Detecta si existe un comentario al incio del codigo que contenga las palabras autor fecha funcion
-function validateComentarioInit($fichero){
+function validateComentInit($fichero){
 	$archivo = file($fichero);//guarda el fichero del que se quiere comprobar si tiene comentarios al pricipio
 	$expr=0;//Variabe de control para saber si se encontro alguno de los tipos de comentario
 	$autor=0;//Variable de control si vale mas de 0 significa que el comentario tiene la palabra autor
@@ -149,6 +149,114 @@ function validateComentarioInit($fichero){
 	}
 	echo "<br>";
 }
+
+
+function validateComentStruct($string){
+	$control=0;
+	$contEstruc=0;
+	$contEstrucMal=0;
+	$archivo = file($string); //se guardan los datos del archivo en un array
+	foreach ($archivo as $num_línea => $lin) {//se recorre el array 
+		if(preg_match("/else\s*\{|if\s*\(|for|foreach|while|\<WHILE\>|\<IF\>|\<ELSE\>|do\s*\{|switch|case/",$lin)){//comprueba que algo coincida con la expr
+			$contEstruc++;
+			$selecccion=preg_split("/else\s*\{|if\s*\(|for|foreach|while|\<WHILE\>|\<IF\>|\<ELSE\>|do\s*\{|switch|case/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);
+			if(preg_match("/else|ELSE/",$selecccion[0])){
+				$salida="else";
+			}
+			if(preg_match("/if|IF/",$selecccion[0])){
+				$salida="if";
+			}
+			if(preg_match("/for/",$selecccion[0])){
+				$salida="for";
+			}
+			if(preg_match("/foreach/",$selecccion[0])){
+				$salida="foreach";
+			}
+			if(preg_match("/while|WHILE/",$selecccion[0])){
+				$salida="while";
+			}
+			if(preg_match("/switch/",$selecccion[0])){
+				$salida="switch";
+			}
+			if(preg_match("/case/",$selecccion[0])){
+				$salida="case";
+			}
+			if(preg_match("/do\s*\{/",$selecccion[0])){
+				$salida="do";
+			}
+			$numliR=$num_línea;//guarda el numero de la linea actual que se esta evaluando 
+			$numliR++;//le suma uno al numero de linea actual que se esta evaluando 
+			for($i=$num_línea;$i>=0;$i--){//recorre hacia atras el array apartir de la posicion en la que encontro algun if else while...
+				if(preg_match("/\/\/|\*\/|\-\->|\/\*|<\!\-\-|^\-\-|^\s*\#/", $archivo[$i])){//si encuentra algun modelo de comentario sale del bucle y sigue con la siguiente linea es decir se deja de recorrer hacia atras 
+					break ;
+				}
+				if(!($i==$numliR-1)){//evita detectar casos que den que no hay comentarios en la primera linea dado que tanto las expr como los; señalan el fin del espacio valido para poner un comentario
+					if(preg_match("/\;|\}|\<php|$\s*END|\{/",$archivo[$i])||$i==0){//se buscan ; } inicios de script END si los encuentra es que no hay comentario y se imprime lo  siguiente y ademas se sale y continua con la siguiente linea es decir se deja de recorrer hacia atras 
+					$contEstrucMal++;
+						echo "La estructura de control: \"$salida\" de la linea $numliR no tiene comentario"."<br />\n";
+						$control=1;
+						break ;
+					}
+				}
+			}
+			
+		}	
+	}
+
+	if(!($control==1)){
+		echo "OK"."<br />\n";
+	}
+	if($contEstrucMal!=0){
+	echo "  Estructuras  $contEstruc/ Estructuras mal $contEstrucMal <br>";
+	}
+	echo "<br>";
+}
+
+
+//detecta si existe un comentario antes de una funcion 
+ function validateComentFunction($string){
+ 	$control=0;
+ 	$contfunciones=0;
+ 	$contfuncionesMal=0;
+	$archivo = file($string);//guarda el contenido del archivo cuya direcion es el string en la variable archivo
+	foreach ($archivo as $num_línea => $lin) {// se recorre el array 
+		if(preg_match("/\s*function\s+\w+\s*\(.*\)|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/",$lin)){//comprueba si se cumple alguno de esos patrones 
+			$selecccion=preg_split("/\s*function\s+[a-zA-Z0-9]+\s*|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);
+			$selecccion2=explode(" ", $selecccion[0]);
+			$salida="";
+			$cont=0;
+			$contfunciones++;
+			foreach($selecccion2 as $i){
+				$cont++;
+			}
+				$aux=explode("(", $selecccion2[1]);
+				$salida=$aux[0];
+			$numliR=$num_línea;//se guarda la linea actual y se le suma uno acontinuacion
+			$numliR++;
+			for($i=$num_línea;$i>=0;$i--){//se recorre el archivo en desde la posicion actual
+				if(preg_match("/\/\/|\*\/|\-\->|\-\-|\/\*|<\!\-\-|^\s*\#/",$archivo[$i])){//si detecta alguno de estos patrones es que esta comentada
+					break;//en caso de que este comentada se sale del bucle se deja de contar y se continua con la siguiente linea (el break no sale del if si no del for)
+				}
+				if(preg_match("/\;|\}|\<\?php|$\s*END/",$archivo[$i])||$i==0){//se comprueba si alguna de exp se cumple y en caso de que si se muestra el mensaje y se sale del for
+					$control=1;
+					$contfuncionesMal++;
+					echo "No hay comentario en la funcion: \"$salida\"  en la linea $numliR"."<br />\n";
+					break;
+
+				}
+			}
+
+		}	
+	}
+	if($control!=1){
+		echo "OK"."<br />\n";
+	}
+	if($contfuncionesMal!=0){
+	echo "  Funciones  $contfunciones/ Funciones mal $contfuncionesMal<br>";
+	}
+	echo "<br />\n";
+}
+
 
 
 ?>
