@@ -101,6 +101,54 @@ function validateDirectories($pathdirectories, $pathcode) {
 	}
 	return $array;
 }
+//Detecta si existe un comentario al incio del codigo que contenga las palabras autor fecha funcion
+function validateComentarioInit($fichero){
+	$archivo = file($fichero);//guarda el fichero del que se quiere comprobar si tiene comentarios al pricipio
+	$expr=0;//Variabe de control para saber si se encontro alguno de los tipos de comentario
+	$autor=0;//Variable de control si vale mas de 0 significa que el comentario tiene la palabra autor
+	$fecha=0;//Variable de control si vale mas de 0 significa que el comentario tiene la palabra fecha
+	$funcion=0;//Variable de control si vale mas de 0 significa que el comentario tiene la palabra funcion
+	foreach ($archivo as $num_línea => $lin) {//for que recorre el fichero 
+		if(preg_match("/^\s*\/\/|^\s*\-\-/",$lin)){//Este if comprueba si existen comentarios de unica linea es decir // o --
+			$expr++;
+			if(preg_match("/autor|Autor|AUTOR/",$lin)){//En caso de que exista en la linea la palabra autor se suma uno a la variable
+				$autor++;
+			}
+			if(preg_match("/fecha|Fecha|FECHA/",$lin)){//En caso de que exista en la linea la palabra fecha se suma uno a la variable
+				$fecha++;
+			}
+			if(preg_match("/funcion|Funcion|FUNCION|función|Función|FUNCIÓN/",$lin)){//En caso de que exista en la linea la palabra funcion se suma uno a la variable
+				$funcion++;
+			}
+		}else{//Si no se compruba si hay algun comentario multilinea es decir /* */ o <!-- --> si es asi lo da por bueno y finaliza 
+			if(preg_match("/^\/\*|^<\!\-\-/",$lin)){
+				foreach ($archivo as $num_línea2 => $lin2) {//Este for se usa para encontrar el fin de comentario es decir */ o -->
+					if(preg_match("/autor|Autor|AUTOR/",$lin2)){//En caso de que exista en la linea la palabra autor se suma uno a la variable
+						$autor++;
+					}
+					if(preg_match("/fecha|Fecha|FECHA/",$lin2)){//En caso de que exista en la linea la palabra fecha se suma uno a la variable
+						$fecha++;
+					}
+					if(preg_match("/funcion|Funcion|FUNCION|función|Función|FUNCIÓN/",$lin2)){//En caso de que exista en la linea la palabra funcion se suma uno a la variable
+						$funcion++;
+					}
+					if(preg_match("/\*\/|\-\-\>/",$lin2)){//En caso de que exista en la linea el fin de comentario se suma uno a la variable expr
+						$expr++;
+					}
+				}
+			}
+			if(!preg_match("/^\s*$/",$lin)){//Si detecta algo que no sean espacios  el bucle acaba
+					break;
+			}
+		}
+	}
+	if((!$expr==0)&&(!$autor==0)&&(!$fecha==0)&&(!$funcion==0)){//Para que sea correcta tiene que tener comentario y las palabras autor fecha y funcion
+		echo "Hay comentarios al inicio."."<br />\n";
+	}else{//Si no se da la situacon anterior algo no esta correcto 
+		echo "No hay comentarios al inicio."."<br />\n";
+	}
+	echo "<br>";
+}
 
 
 ?>
