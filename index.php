@@ -15,29 +15,33 @@ $PATH_code = "CodigoAExaminar";
  * no estén vacíos y que existan.
  */
 function validateConf($confFile) {
-
+	//Si el fichero de configuración existe y se tinene permisos de lectura
 	if (is_readable($confFile)) {
+		//Se introduce el contenido en el array $files
 		$files = file($confFile);
-
+		//Si está vacío
 		if (empty($files)) { return 0; }
 
 		return 1;
 
-	} else { return -1; };
+	} else { return -1; } //Si no existe o no se tienen permisos de lectura
 
 }
 
+/*
+ * Función que envía un mensaje si existe algún error en los ficheros de configuración.
+ */
 function validateConfMessage($pathdirectories, $pathfiles) {
-
+	//Si la función validateConf devuelve 0 (está vacío)
 	if (validateConf($pathdirectories) == 0) {
 		return '</br><p2 class="errorMessage">ERROR: El fichero Directories.conf está vacío.</p2></br></br>';
-	} else if (validateConf($pathdirectories) == -1) {
+	} else if (validateConf($pathdirectories) == -1) { //Si la función validateConf devuelve -1 (no tiene permisos de lectura o no existe)
 		return '</br><p2 class="errorMessage">ERROR: El fichero Directories.conf no existe o no tiene permisos de lectura.</p2></br></br>';
 	}
 
-	if (validateConf($pathfiles) == 0) {
+	if (validateConf($pathfiles) == 0) { //Si la función validateConf devuelve 0 (está vacío)
 		return '</br><p2 class="errorMessage">ERROR: El fichero Files.conf está vacío.</p2></br></br>';
-	} else if (validateConf($pathfiles) == -1) {
+	} else if (validateConf($pathfiles) == -1) { //Si la función validateConf devuelve -1 (no tiene permisos de lectura o no existe)
 		return '</br><p2 class="errorMessage">ERROR: El fichero Files.conf no existe o no tiene permisos de lectura.</p2></br></br>';
 	}
 
@@ -48,15 +52,16 @@ function validateConfMessage($pathdirectories, $pathfiles) {
  * no esté vacío y que exista.
  */
 function validateCode($pathcode) {
-
+	//Si el PATH existe y se tinene permisos de lectura
 	if (is_readable($pathcode)) {
+		//Se introducen todos los directorios en el array $files sin los dirs '..' '.'
 		$files = array_diff(scandir($pathcode), array('.', '..'));
-
+		//Si está vacío
 		if (empty($files)) { return -1; }
 
 		return 1;
 
-	} else { return -1; };
+	} else { return -1; }; //Si no existe o no se tienen permisos de lectura
 
 }
 
@@ -223,7 +228,7 @@ function validateFiles($pathfiles, $pathcode) {
 					//Por cada uno de los elementos del directorio $path_completo como $valor
 					foreach($allPaths as $num_valor => $valor) {//2do
 			        	//Quitamos los que son directorios y los . y ..
-			        	if($valor === '.' || $valor === '..' || is_dir($valor))
+			        	if($valor === '.' || $valor === '..' || is_dir(trim($path_completo) . '/' . trim($valor)))
 						{
 							continue; //Si es directorio . o .. pasamos a la siguiente iteración del bucle 
 						}
