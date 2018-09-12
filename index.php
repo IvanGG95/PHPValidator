@@ -102,6 +102,42 @@ function escaneoRecursivoFicheros($pathdirectories)
 }
 
 /*
+	Escanea recursivamente todos los directorios de $pathcode y los devuelve.
+*/
+function escaneoRecursivoDirectorios($pathcode)
+{
+	//Declaramos la variable como array que va a guardar el escaneo
+	$result = array();
+	//Por cada directorio/fichero en el codigo a validar
+	foreach(scandir($pathcode) as $filename)
+	{
+		//Si el $filename es el directorio actual o el anterior pasamos al siguiente elemento
+		if($filename === '.' || $filename === '..')
+		{
+			continue;
+		}
+		//Aseguramos la recursvidad escribiendo el PATH completo
+		$filePath = $pathcode . '/' . $filename; 
+		//Si el $filePath es un directorio, entramos en el y escaneamos de nuevo
+		if(is_dir($filePath))
+		{
+			//Metemos al final del array el $filePath
+			$result[] = $filePath;
+			if(is_readable($filePath))
+			{
+				//Por cada uno de los elementos de lo devuelto en el escaneoRecursivo se mete en el array
+				foreach(escaneoRecursivoDirectorios($filePath) as $childFilename)
+				{
+					//Metemos al final del array el $childFilename
+					$result[] = $childFilename;
+				}
+			}
+		}
+	}
+	return $result;
+}
+
+/*
  * Existen los directorios especificados en el fichero Directories.conf
  * y no hay ningún fichero mas en el directorio principal que el
  * index.php
@@ -117,7 +153,9 @@ function validateDirectories($pathdirectories, $pathcode) {
 		//Variable que vuelca el contenido del fichero de configuración
 		$path = file($pathdirectories);
 		//Variable que vuelca todo el contenido que cuelga directamente de la carpeta contenedora
-		$dir = glob($pathcode . '/*');
+		$files = glob($pathcode . '/*.*');
+		//Variable que guarda todos los directorios que hay en $pathcode
+		$dir =escaneoRecursivoDirectorios($pathcode);
 		//Variable que guarda el número de ficheros + directorios (se eliminan '.' '..')
 		$dir_num = count($dir) - 1;
 		//Variable para la comprobación de index.php
@@ -127,10 +165,8 @@ function validateDirectories($pathdirectories, $pathcode) {
 		foreach ($path as $num_line => $line) {//1ro
 			//Por cada fichero o directorio de la carpeta contedora
 			foreach ($dir as $num_line2 => $line2) { //2do
-
 				//Si coinciden el nombre en los ficheros de configuración y el de la carpeta contenedora
 				if (strcmp(trim($line),trim($line2)) === 0) {
-
 					echo '<p2>' . trim($line) . ' ---------- OK</p2><br/>';
 					array_push($array, 'OK');
 					array_splice($dir, $num_line2, 1);
@@ -147,7 +183,7 @@ function validateDirectories($pathdirectories, $pathcode) {
 		}
 
 		//Por cada fichero + directorios de la carpeta contenedora
-		foreach ($dir as $num_line => $line) {//3ro
+		foreach ($files as $num_line => $line) {//3ro
 			//Si coincide con index.php
 			if(strcmp($line, $pathcode . '/index.php') === 0)
 			{
@@ -238,16 +274,20 @@ function validateFiles($pathfiles, $pathcode) {
 							//Si coincide con la expresión regular con +1 '%' con $valor
 							if(preg_match("/\\" . '/\b' . "([a-z]*" . $simbolo . "){" . $numeroPorcentajes . "}" . trim($cadenaValidacion) . "\." . trim($tipoFichero) . "\b/i", trim('/' . $valor), $array_pregmatch))
 						    {
+						    	//Substituimos para comprobar que no hay nada despues del punto
 						    	$resultado = str_replace($array_pregmatch[0],'', ('/' . $valor));
+						    	//Si está vacío (no tiene nada despues del punto)
 						    	if(!empty($resultado)){
 						    		echo '<p2 class="errorMessage">' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
 									array_push($array, 'ERROR');
 						    	}
+						    	//Si no está vacío
 						    	else{
 							    	echo '<p2>' . trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '</p2></br>';
 									array_push($array, 'OK');
 						    	}
 						    }
+						    //Si no coincide la expresión regular con +1'%'
 						    else
 						    {	
 						    	echo '<p2 class="errorMessage">' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
@@ -263,10 +303,11 @@ function validateFiles($pathfiles, $pathcode) {
 						    	echo '<p2>' . trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '</p2></br>';
 						    	array_push($array, 'OK');
 						    }
+						    //Si no coincide la expresión regular con menos de 1 '%'
 						    else
 						    {
 						    	echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2></br>';
-									array_push($array, 'ERROR');
+								array_push($array, 'ERROR');
 						    }
 						}
 					}
@@ -277,35 +318,35 @@ function validateFiles($pathfiles, $pathcode) {
 				}
 			}
 			//Si no lleva '%' - es decir, que valide los que tengan un nombre concreto
-			else
-			{
-				if(is_dir($path_completo) &&  is_readable($path_completo))
-				{
-					$allPaths = scandir($path_completo);
+			else {
+				//Si es un directorio, se puede leer y existe
+				if(is_dir($path_completo) &&  is_readable($path_completo)) {
+					//Se guardan todos los ficheros de los directorios especificados
+					$allPaths = escaneoRecursivoFicheros($path_completo);
+					//Se cuentan para recorrerlos todos y mostrar error en caso de llegar al final
 					$total_valor = count($allPaths) - 1;
-					//Por cada uno de los elementos del directorio $path_completo como $valor
-					foreach($allPaths as $num_valor => $valor)
-					{
-					    //Quitamos los que son directorios y los . y ..
-					    if($valor === '.' || $valor === '..' || is_dir($valor))
-						{
-							continue;
-						}
-						//Validamos que el nombre concreto conincide
-						if(strcasecmp(trim($path_completo . '/' . $valor),trim($path_completo . '/' . $dividirTodo[$num_elem])) === 0)
-						{
-						  echo '<p2>' . trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '</p2><br/>';
-						  array_push($array, 'OK');
-						  break;
-						}
-						elseif($total_valor <= $num_valor) {
-							echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
-						  array_push($array, 'ERROR');
+					//Si está vacío
+					if(empty($allPaths)) {
+						echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
+						 array_push($array, 'ERROR');
+					}
+					else {
+						//Por cada uno de los elementos del directorio $path_completo como $valor
+						foreach($allPaths as $num_valor => $valor) {
+							//Validamos que el nombre concreto conincide
+							if(strcasecmp(trim($path_completo . '/' . $valor),trim($path_completo . '/' . $dividirTodo[$num_elem])) === 0) {
+							  echo '<p2>' . trim($path_completo) . '/' . trim($valor) . ' ---------- OK' . '</p2><br/>';
+							  array_push($array, 'OK');
+							  break;
+							}
+							elseif($total_valor <= $num_valor) {
+								echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
+							  array_push($array, 'ERROR');
+							}
 						}
 					}
-				}
-				else
-				{
+				} 
+				else { //Si es un directorio, o no se puede leer o no existe
 					echo '<p2 class="errorMessage">' . trim($path_completo) .' ---------- ERROR: No existe el directorio base' . '</p2><br/>';
 					array_push($array, 'ERROR');
 				}
