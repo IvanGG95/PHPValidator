@@ -101,6 +101,22 @@ function escaneoRecursivoFicheros($pathdirectories)
 	return $result;
 }
 
+//Muestra el resumen de elementos
+	//Se le pasa un array donde se guardan todos los casos de error y ok
+	function summary($array) {
+
+		$cont = 0;		//Variable creada para contar los casos de error dados
+		//Recorre el array en busca de los casos de error
+		foreach ($array as $i) {
+			if ($i == 'ERROR') {
+				$cont++;
+			}
+		}
+		
+		//Muestra el total de elementos y el total de errores en forma de resumen
+		echo count($array) . ' Elementos analizados / Número de errores: ' . $cont;
+	}
+
 /*
 	Escanea recursivamente todos los directorios de $pathcode y los devuelve.
 */
@@ -206,7 +222,8 @@ function validateDirectories($pathdirectories, $pathcode) {
 	}
 	
 	//
-	//TODO: llamar a la función SUMMARY
+	echo '<h3>---RESUMEN---</h3>';
+	summary($array);
 	//
 }
 
@@ -278,7 +295,7 @@ function validateFiles($pathfiles, $pathcode) {
 						    	$resultado = str_replace($array_pregmatch[0],'', ('/' . $valor));
 						    	//Si está vacío (no tiene nada despues del punto)
 						    	if(!empty($resultado)){
-						    		echo '<p2 class="errorMessage">' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
+						    		echo '<p2 class="errorMessage">------ ' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
 									array_push($array, 'ERROR');
 						    	}
 						    	//Si no está vacío
@@ -290,7 +307,7 @@ function validateFiles($pathfiles, $pathcode) {
 						    //Si no coincide la expresión regular con +1'%'
 						    else
 						    {	
-						    	echo '<p2 class="errorMessage">' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
+						    	echo '<p2 class="errorMessage">------ ' . trim($path_completo) . '/' . trim($valor) . ' ---------- ERROR: Formato incorrecto' . '</p2></br>';
 									array_push($array, 'ERROR');
 						    }
 						}
@@ -306,14 +323,14 @@ function validateFiles($pathfiles, $pathcode) {
 						    //Si no coincide la expresión regular con menos de 1 '%'
 						    else
 						    {
-						    	echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2></br>';
+						    	echo '<p2 class="errorMessage">------ ' . $line . ' ---------- ERROR: No existe el archivo' . '</p2></br>';
 								array_push($array, 'ERROR');
 						    }
 						}
 					}
 				}
 				else {
-					echo '<p2 class="errorMessage">' . $line .' ---------- ERROR: No existe el directorio base' . '</p2></br>';
+					echo '<p2 class="errorMessage">------ ' . $line .' ---------- ERROR: No existe el directorio base' . '</p2></br>';
 					array_push($array, 'ERROR');
 				}
 			}
@@ -327,7 +344,7 @@ function validateFiles($pathfiles, $pathcode) {
 					$total_valor = count($allPaths) - 1;
 					//Si está vacío
 					if(empty($allPaths)) {
-						echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
+						echo '<p2 class="errorMessage">------ ' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
 						 array_push($array, 'ERROR');
 					}
 					else {
@@ -340,14 +357,14 @@ function validateFiles($pathfiles, $pathcode) {
 							  break;
 							}
 							elseif($total_valor <= $num_valor) {
-								echo '<p2 class="errorMessage">' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
+								echo '<p2 class="errorMessage">------ ' . $line . ' ---------- ERROR: No existe el archivo' . '</p2><br/>';
 							  array_push($array, 'ERROR');
 							}
 						}
 					}
 				} 
 				else { //Si es un directorio, o no se puede leer o no existe
-					echo '<p2 class="errorMessage">' . trim($path_completo) .' ---------- ERROR: No existe el directorio base' . '</p2><br/>';
+					echo '<p2 class="errorMessage">------ ' . trim($path_completo) .' ---------- ERROR: No existe el directorio base' . '</p2><br/>';
 					array_push($array, 'ERROR');
 				}
 			}
@@ -355,7 +372,8 @@ function validateFiles($pathfiles, $pathcode) {
 	}
 
 	//
-	//TODO: llamar a la función SUMMARY
+	echo '<h3>---RESUMEN---</h3>';
+	summary($array);
 	//
 }
 
@@ -363,8 +381,12 @@ function validateFiles($pathfiles, $pathcode) {
 
 
 //Detecta si existe un comentario al incio del codigo que contenga las palabras autor fecha funcion
-function validateComentInit($array){
-	foreach($array as $numFich => $value){
+function validateComentInit($input){
+
+	//Array que guardará la salida
+	$array = array();
+
+	foreach($input as $numFich => $value){
 		$archivo = file($value);//guarda el fichero del que se quiere comprobar si tiene comentarios al pricipio
 		$expr=0;//Variabe de control para saber si se encontro alguno de los tipos de comentario
 		$autor=0;//Variable de control si vale mas de 0 significa que el comentario tiene la palabra autor
@@ -406,16 +428,89 @@ function validateComentInit($array){
 		}
 		if((!$expr==0)&&(!$autor==0)&&(!$fecha==0)&&(!$funcion==0)){//Para que sea correcta tiene que tener comentario y las palabras autor fecha y funcion
 			echo '<p2>' . trim($value) . ' ---------- OK</p2><br/>';
+			array_push($array, 'OK');
 		}else{//Si no se da la situacon anterior algo no esta correcto 
 			echo '<p2 class="errorMessage">' . trim($value) . ' ---------- ERROR: No hay comentario al inicio' . '</p2><br/>';
+			array_push($array, 'ERROR');
 		}
 	}
+
+	//
+	echo '<h3>---RESUMEN---</h3>';
+	summary($array);
+	//
 }
 
+
+//detecta si existe un comentario antes de una funcion o en la linea en la que esta está
+function validateComentFunction($input){
+
+	//Array que guardará la salida
+	$array = array();
+
+ 	foreach($input as $numFich => $value){
+ 		echo '<p2>' . trim($value) . '</p2>';
+	 	$control=0;// variable que se utiliza para saber si esta correcto o no es fichero. Si vale mas de 0 esta mal si vale 0 esta con comentarios
+	 	$contfunciones=0;//cuenta el numero total de funciones para cada ficero
+	 	$contfuncionesMal=0;//cuenta el numero total de funciones mal
+		$archivo = file($value);//guarda el contenido del archivo cuya direcion es el string en la variable archivo
+		foreach ($archivo as $num_línea => $lin) {// se recorre el array 
+			if(preg_match("/\s*function\s+\w+\s*\(.*\)|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/",$lin)){//comprueba si se cumple alguno de esos patrones 
+				$selecccion=preg_split("/\s*function\s+[a-zA-Z0-9]+\s*|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);//se busca si hay alguna palabra como funcion en la linea y si es asi se guada en selecccion
+				$selecccion2=explode(" ", $selecccion[0]);//se separa la linea por espacios 
+				$salida="";//variable que se utilizara para poner el nombre de la funcion
+				$contfunciones++;//se encontro una funcion 
+				$aux=explode("(", $selecccion2[1]);//se separa por parentesis
+				$salida=$aux[0];//la salida sera la posicion numero cero del array resultante de dividir por parentesis seleccion
+				$numliR=$num_línea;//se guarda la linea actual y se le suma uno acontinuacion
+				$numliR++;
+				for($i=$num_línea;$i>=0;$i--){//se recorre el archivo en desde la posicion actual
+					if(preg_match("/\/\/|\*\/|\-\->|\-\-|\/\*|<\!\-\-|^\s*\#/",$archivo[$i])){//si detecta alguno de estos patrones es que esta comentada
+						break;//en caso de que este comentada se sale del bucle se deja de contar y se continua con la siguiente linea (el break no sale del if si no del for)
+					}
+					if(preg_match("/\;|\}|\<\?php|$\s*END/",$archivo[$i])||$i==0){//se comprueba si alguna de exp se cumple y en caso de que si se muestra el mensaje y se sale del for
+						$control=1;//se pone a uno ya que no se encontro un comentario
+						$contfuncionesMal++;//si encontro algo de lo anterior quiere decir que la funcion no tiene comentarios
+						echo '<p2 class="errorMessage"></br>------ No hay comentario en la funcion: ' . $salida . '  en la linea ' . $numliR . '</p2>';
+						break;//en caso de que no este comentada se sale del bucle se deja de contar y se continua con la siguiente linea (el break no sale del if si no del for)
+
+					}
+				}
+
+			}	
+		}
+		if($control!=1){//si no vale 1 esta bien 
+			echo '<p2> ---------- OK</p2><br/>';
+			array_push($array, 'OK');
+		}
+		if($contfuncionesMal!=0){// si no vale 0 no hay comentarios
+			echo '<h4>Resumen de errores del archivo:</h4>';
+			echo '<p2>Funciones ' . $contfunciones . ' / Funciones mal comentadas ' . $contfuncionesMal . '<br> ' . '</p2>';
+			echo '--------------------------------------------------------------------------------------------------<br/></br>';
+			array_push($array, 'ERROR');
+		}
+	}
+
+	//
+	echo '<h3>---RESUMEN---</h3>';
+	summary($array);
+	//
+}
+
+
+//
+//AQUI VA EL 5
+//
+
+
 //busca estructuras y comprueba que tengan un comentario en su linea o en las lineas superiores
-function validateComentStruct($array){
-	foreach($array as $numFich => $value){
-		echo '<br/><p2>' . trim($value) . ':   </p2>';
+function validateComentStruct($input){
+
+	//Array que guardará la salida
+	$array = array();
+
+	foreach($input as $numFich => $value){
+		echo '<br/><p2>' . trim($value) . '</p2>';
 		$control=0;//variable que se pone a 1 si  no hay comentarios antes de la estrutura
 		$contEstruc=0;//cuanta las estructuras totales del fichero
 		$contEstrucMal=0;//cuenta las estructuras que esta sin comentar del fichero
@@ -457,7 +552,7 @@ function validateComentStruct($array){
 					if(!($i==$numliR-1)){//evita detectar casos que den que no hay comentarios en la primera linea dado que tanto las expr como los; señalan el fin del espacio valido para poner un comentario
 						if(preg_match("/\;|\}|\<php|$\s*END|\{/",$archivo[$i])||$i==0){//se buscan ; } inicios de script END si los encuentra es que no hay comentario y se imprime lo  siguiente y ademas se sale y continua con la siguiente linea es decir se deja de recorrer hacia atras 
 						$contEstrucMal++;
-							echo '<p2 class="errorMessage"> <br />La estructura de control: ' . $salida . ' de la linea ' . $numliR . ' no tiene comentario</p2>';
+							echo '<p2 class="errorMessage"> </br>------ La estructura de control: ' . $salida . ' de la linea ' . $numliR . ' no tiene comentario</p2>';
 							$control=1;
 							break ;
 						}
@@ -468,55 +563,21 @@ function validateComentStruct($array){
 		}
 
 		if(!($control==1)){//si control vale 1 quiere decir que se ha encontrado alguna estructura sin comentario por tanto si no vale 1 esta bien
-			echo '<p2> ---------- OK</p2><br/>';
+			echo '<p2> ---------- OK</p2>';
+			array_push($array, 'OK');
 		}
 		if($contEstrucMal!=0){//si es diferente de 0 hay un error y se informa de este poniendo que que lineas y que estructuras son las que estan mal
-			echo '<p2 class="errorMessage"><br/>Estructuras ' . $contEstruc . ' / Estructuras no comentadas ' . $contEstrucMal . '</p2><br/>';
+			echo '<h4>Resumen de errores del archivo:</h4>';
+			echo '<p2>Estructuras ' . $contEstruc . ' / Estructuras no comentadas ' . $contEstrucMal . '</p2><br/>';
+			echo '--------------------------------------------------------------------------------------------------<br/>';
+			array_push($array, 'ERROR');
 		}
 	}
-}
 
-
-//detecta si existe un comentario antes de una funcion o en la linea en la que esta está
-function validateComentFunction($array){
- 	foreach($array as $numFich => $value){
- 		echo '<p2>' . trim($value) . ':   </p2>';
-	 	$control=0;// variable que se utiliza para saber si esta correcto o no es fichero. Si vale mas de 0 esta mal si vale 0 esta con comentarios
-	 	$contfunciones=0;//cuenta el numero total de funciones para cada ficero
-	 	$contfuncionesMal=0;//cuenta el numero total de funciones mal
-		$archivo = file($value);//guarda el contenido del archivo cuya direcion es el string en la variable archivo
-		foreach ($archivo as $num_línea => $lin) {// se recorre el array 
-			if(preg_match("/\s*function\s+\w+\s*\(.*\)|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/",$lin)){//comprueba si se cumple alguno de esos patrones 
-				$selecccion=preg_split("/\s*function\s+[a-zA-Z0-9]+\s*|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);//se busca si hay alguna palabra como funcion en la linea y si es asi se guada en selecccion
-				$selecccion2=explode(" ", $selecccion[0]);//se separa la linea por espacios 
-				$salida="";//variable que se utilizara para poner el nombre de la funcion
-				$contfunciones++;//se encontro una funcion 
-				$aux=explode("(", $selecccion2[1]);//se separa por parentesis
-				$salida=$aux[0];//la salida sera la posicion numero cero del array resultante de dividir por parentesis seleccion
-				$numliR=$num_línea;//se guarda la linea actual y se le suma uno acontinuacion
-				$numliR++;
-				for($i=$num_línea;$i>=0;$i--){//se recorre el archivo en desde la posicion actual
-					if(preg_match("/\/\/|\*\/|\-\->|\-\-|\/\*|<\!\-\-|^\s*\#/",$archivo[$i])){//si detecta alguno de estos patrones es que esta comentada
-						break;//en caso de que este comentada se sale del bucle se deja de contar y se continua con la siguiente linea (el break no sale del if si no del for)
-					}
-					if(preg_match("/\;|\}|\<\?php|$\s*END/",$archivo[$i])||$i==0){//se comprueba si alguna de exp se cumple y en caso de que si se muestra el mensaje y se sale del for
-						$control=1;//se pone a uno ya que no se encontro un comentario
-						$contfuncionesMal++;//si encontro algo de lo anterior quiere decir que la funcion no tiene comentarios
-						echo '<p2 class="errorMessage"><br />No hay comentario en la funcion: ' . $salida . '  en la linea ' . $numliR . '</p2>';
-						break;//en caso de que no este comentada se sale del bucle se deja de contar y se continua con la siguiente linea (el break no sale del if si no del for)
-
-					}
-				}
-
-			}	
-		}
-		if($control!=1){//si no vale 1 esta bien 
-			echo '<p2> ---------- OK</p2><br/>';	
-		}
-		if($contfuncionesMal!=0){// si no vale 0 no hay comentarios
-			echo '<p2 class="errorMessage"><br> Funciones  ' . $contfunciones . '/ Funciones mal ' . $contfuncionesMal . '<br> ' . '</p2>';
-		}
-	}
+	//
+	echo '<h3>---RESUMEN---</h3>';
+	summary($array);
+	//
 }
 
 
