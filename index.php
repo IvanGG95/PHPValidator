@@ -363,27 +363,26 @@ function validateComentInit($array){
 				}
 			}
 		}
-		echo $value."     ";
 		if((!$expr==0)&&(!$autor==0)&&(!$fecha==0)&&(!$funcion==0)){//Para que sea correcta tiene que tener comentario y las palabras autor fecha y funcion
-			echo "Hay comentarios al inicio."."<br />\n";
+			echo '<p2>' . trim($value) . ' ---------- OK</p2><br/>';
 		}else{//Si no se da la situacon anterior algo no esta correcto 
-			echo "No hay comentarios al inicio."."<br />\n";
+			echo '<p2 class="errorMessage">' . trim($value) . ' ---------- ERROR: No hay comentario al inicio' . '</p2><br/>';
 		}
-		echo "<br>";
 	}
 }
 
-
+//busca estructuras y comprueba que tengan un comentario en su linea o en las lineas superiores
 function validateComentStruct($array){
 	foreach($array as $numFich => $value){
-		$control=0;
-		$contEstruc=0;
-		$contEstrucMal=0;
+		echo '<br/><p2>' . trim($value) . ':   </p2>';
+		$control=0;//variable que se pone a 1 si  no hay comentarios antes de la estrutura
+		$contEstruc=0;//cuanta las estructuras totales del fichero
+		$contEstrucMal=0;//cuenta las estructuras que esta sin comentar del fichero
 		$archivo = file($value); //se guardan los datos del archivo en un array
 		foreach ($archivo as $num_línea => $lin) {//se recorre el array 
 			if(preg_match("/else\s*\{|if\s*\(|for|foreach|while|\<WHILE\>|\<IF\>|\<ELSE\>|do\s*\{|switch|case/",$lin)){//comprueba que algo coincida con la expr
 				$contEstruc++;
-				$selecccion=preg_split("/else\s*\{|if\s*\(|for|foreach|while|\<WHILE\>|\<IF\>|\<ELSE\>|do\s*\{|switch|case/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);
+				$selecccion=preg_split("/else\s*\{|if\s*\(|for|foreach|while|\<WHILE\>|\<IF\>|\<ELSE\>|do\s*\{|switch|case/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);//en caso de que se encuentre en una linea alguna de las estructuras se busca cual es en los siguientes ifs
 				if(preg_match("/else|ELSE/",$selecccion[0])){
 					$salida="else";
 				}
@@ -417,7 +416,7 @@ function validateComentStruct($array){
 					if(!($i==$numliR-1)){//evita detectar casos que den que no hay comentarios en la primera linea dado que tanto las expr como los; señalan el fin del espacio valido para poner un comentario
 						if(preg_match("/\;|\}|\<php|$\s*END|\{/",$archivo[$i])||$i==0){//se buscan ; } inicios de script END si los encuentra es que no hay comentario y se imprime lo  siguiente y ademas se sale y continua con la siguiente linea es decir se deja de recorrer hacia atras 
 						$contEstrucMal++;
-							echo "La estructura de control: \"$salida\" de la linea $numliR no tiene comentario"."<br />\n";
+							echo '<p2 class="errorMessage"> <br />La estructura de control: ' . $salida . ' de la linea ' . $numliR . ' no tiene comentario</p2>';
 							$control=1;
 							break ;
 						}
@@ -427,36 +426,32 @@ function validateComentStruct($array){
 			}	
 		}
 
-		if(!($control==1)){
-			echo "OK"."<br />\n";
+		if(!($control==1)){//si control vale 1 quiere decir que se ha encontrado alguna estructura sin comentario por tanto si no vale 1 esta bien
+			echo '<p2> ---------- OK</p2><br/>';
 		}
-		if($contEstrucMal!=0){
-		echo "  Estructuras  $contEstruc/ Estructuras mal $contEstrucMal <br>";
+		if($contEstrucMal!=0){//si es diferente de 0 hay un error y se informa de este poniendo que que lineas y que estructuras son las que estan mal
+			echo '<p2 class="errorMessage"><br/>Estructuras ' . $contEstruc . ' / Estructuras no comentadas ' . $contEstrucMal . '</p2><br/>';
 		}
-		echo "<br>";
 	}
 }
 
 
-//detecta si existe un comentario antes de una funcion 
- function validateComentFunction($array){
+//detecta si existe un comentario antes de una funcion o en la linea en la que esta está
+function validateComentFunction($array){
  	foreach($array as $numFich => $value){
-	 	$control=0;
-	 	$contfunciones=0;
-	 	$contfuncionesMal=0;
+ 		echo '<p2>' . trim($value) . ':   </p2>';
+	 	$control=0;// variable que se utiliza para saber si esta correcto o no es fichero. Si vale mas de 0 esta mal si vale 0 esta con comentarios
+	 	$contfunciones=0;//cuenta el numero total de funciones para cada ficero
+	 	$contfuncionesMal=0;//cuenta el numero total de funciones mal
 		$archivo = file($value);//guarda el contenido del archivo cuya direcion es el string en la variable archivo
 		foreach ($archivo as $num_línea => $lin) {// se recorre el array 
 			if(preg_match("/\s*function\s+\w+\s*\(.*\)|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/",$lin)){//comprueba si se cumple alguno de esos patrones 
-				$selecccion=preg_split("/\s*function\s+[a-zA-Z0-9]+\s*|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);
-				$selecccion2=explode(" ", $selecccion[0]);
-				$salida="";
-				$cont=0;
-				$contfunciones++;
-				foreach($selecccion2 as $i){
-					$cont++;
-				}
-					$aux=explode("(", $selecccion2[1]);
-					$salida=$aux[0];
+				$selecccion=preg_split("/\s*function\s+[a-zA-Z0-9]+\s*|\s*CREATE\s+FUNCTION\s+\w+\s*\(.*\)/", $lin, 1, PREG_SPLIT_DELIM_CAPTURE);//se busca si hay alguna palabra como funcion en la linea y si es asi se guada en selecccion
+				$selecccion2=explode(" ", $selecccion[0]);//se separa la linea por espacios 
+				$salida="";//variable que se utilizara para poner el nombre de la funcion
+				$contfunciones++;//se encontro una funcion 
+				$aux=explode("(", $selecccion2[1]);//se separa por parentesis
+				$salida=$aux[0];//la salida sera la posicion numero cero del array resultante de dividir por parentesis seleccion
 				$numliR=$num_línea;//se guarda la linea actual y se le suma uno acontinuacion
 				$numliR++;
 				for($i=$num_línea;$i>=0;$i--){//se recorre el archivo en desde la posicion actual
@@ -464,23 +459,22 @@ function validateComentStruct($array){
 						break;//en caso de que este comentada se sale del bucle se deja de contar y se continua con la siguiente linea (el break no sale del if si no del for)
 					}
 					if(preg_match("/\;|\}|\<\?php|$\s*END/",$archivo[$i])||$i==0){//se comprueba si alguna de exp se cumple y en caso de que si se muestra el mensaje y se sale del for
-						$control=1;
-						$contfuncionesMal++;
-						echo "No hay comentario en la funcion: \"$salida\"  en la linea $numliR"."<br />\n";
-						break;
+						$control=1;//se pone a uno ya que no se encontro un comentario
+						$contfuncionesMal++;//si encontro algo de lo anterior quiere decir que la funcion no tiene comentarios
+						echo '<p2 class="errorMessage"><br />No hay comentario en la funcion: ' . $salida . '  en la linea ' . $numliR . '</p2>';
+						break;//en caso de que no este comentada se sale del bucle se deja de contar y se continua con la siguiente linea (el break no sale del if si no del for)
 
 					}
 				}
 
 			}	
 		}
-		if($control!=1){
-			echo "OK"."<br />\n";
+		if($control!=1){//si no vale 1 esta bien 
+			echo '<p2> ---------- OK</p2><br/>';	
 		}
-		if($contfuncionesMal!=0){
-		echo "  Funciones  $contfunciones/ Funciones mal $contfuncionesMal<br>";
+		if($contfuncionesMal!=0){// si no vale 0 no hay comentarios
+			echo '<p2 class="errorMessage"><br> Funciones  ' . $contfunciones . '/ Funciones mal ' . $contfuncionesMal . '<br> ' . '</p2>';
 		}
-		echo "<br />\n";
 	}
 }
 
@@ -541,11 +535,17 @@ function validateComentStruct($array){
 
 	  	echo '<h4>3. Los ficheros del directorio CodigoAExaminar tiene todos al principio del fichero comentada su función, autor y fecha<br>(para todos los ficheros que no son propietarios de tipo .pdf, .jpg, etc)</h4>';
 
+	  	validateComentInit(escaneoRecursivoFicheros($PATH_code));
+
 	  	echo '<h4>4. Las funciones y métodos en el código del directorio CodigoAExaminar tienen comentarios con una descripción antes de su comienzo</h4>';
+
+	  	validateComentFunction(escaneoRecursivoFicheros($PATH_code));
 
 	  	echo '<h4>5. En el código están todas las variables definidas antes de su uso y tienen un comentario en la línea anterior o en la misma línea</h4>';
 
 	  	echo '<h4>6. En el código están comentadas todas las estructuras de control en la línea anterior a su uso o en la misma línea</h4>';
+
+	  	validateComentStruct(escaneoRecursivoFicheros($PATH_code));
 
 	  	echo '<h4>7. Todos los ficheros dentro del directorio Model son definiciones de clases</h4>';
 
